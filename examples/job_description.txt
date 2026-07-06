@@ -1,0 +1,13 @@
+Software Engineering Intern
+
+Responsibilities:
+- Build backend APIs using Python
+- Work with databases
+- Collaborate with engineering team
+- Write clean and maintainable code
+
+Requirements:
+- Basic Python knowledge
+- Familiarity with Git
+- Understanding of APIs
+- Strong communication skills

@@ -1,0 +1,14 @@
+Name: Student Name
+
+Education:
+Bachelor student in Computer Science
+
+Skills:
+Python basics, HTML, CSS, problem solving, teamwork
+
+Projects:
+Personal portfolio website using HTML and CSS.
+Simple calculator built with Python.
+
+Experience:
+No professional experience yet.
