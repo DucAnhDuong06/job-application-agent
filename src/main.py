@@ -12,12 +12,6 @@ USE_DEMO_MODE = api_key is None or api_key.strip() == ""
 if not USE_DEMO_MODE:
     client = OpenAI(api_key=api_key)
 
-SYSTEM_PROMPT = """
-Ban la mot Job Application Agent.
-Nhiem vu: giup ung vien phan tich job description va resume.
-Khong duoc bia dat thong tin.
-"""
-
 
 def read_multiline_input(title: str) -> str:
     print(f"\n{title}")
@@ -28,6 +22,7 @@ def read_multiline_input(title: str) -> str:
 
     while True:
         line = input()
+
         if line.strip() == "":
             empty_count += 1
             if empty_count >= 2:
@@ -39,7 +34,14 @@ def read_multiline_input(title: str) -> str:
     return "\n".join(lines).strip()
 
 
-def generate_demo_package(job_description: str, resume_text: str) -> str:
+def format_list(items: list[str]) -> str:
+    if not items:
+        return "- Không tìm thấy"
+
+    return "\n".join([f"- {item}" for item in items])
+
+
+def generate_demo_package(job_description: str, resume_text: str, resume_info: dict) -> str:
     ats_result = scan_ats(job_description, resume_text)
 
     matched = ats_result["matched_skills"]
@@ -54,8 +56,12 @@ def generate_demo_package(job_description: str, resume_text: str) -> str:
         JOB APPLICATION REPORT
 =========================================
 
+CANDIDATE
+---------
+{resume_info["name"]}
+
 ATS MATCH SCORE
-----------------
+---------------
 {score}/100
 
 MATCHED SKILLS
@@ -66,13 +72,29 @@ MISSING SKILLS
 --------------
 {missing_text}
 
-RESUME SKILLS FOUND
--------------------
-{", ".join(ats_result["resume_skills"]) if ats_result["resume_skills"] else "Không tìm thấy"}
+=========================================
+STRUCTURED RESUME DATA
+=========================================
 
-JOB DESCRIPTION SKILLS FOUND
-----------------------------
-{", ".join(ats_result["jd_skills"]) if ats_result["jd_skills"] else "Không tìm thấy"}
+SUMMARY
+-------
+{resume_info["summary"]}
+
+EDUCATION
+---------
+{format_list(resume_info["education"])}
+
+EXPERIENCE
+----------
+{format_list(resume_info["experience"])}
+
+SKILLS
+------
+{format_list(resume_info["skills"])}
+
+LANGUAGES
+---------
+{format_list(resume_info["languages"])}
 
 =========================================
 COVER LETTER
@@ -82,18 +104,18 @@ Dear Hiring Manager,
 
 I am excited to apply for this position.
 
-Based on the job description, I already possess several required skills, including:
+Based on the job description, my background matches several important requirements, including:
 
 {matched_text}
 
-I am also actively learning and improving in these areas:
+I am also continuing to improve in the following areas:
 
 {missing_text}
 
-Thank you for your consideration.
+Thank you for your time and consideration.
 
 Best regards,
-Candidate
+{resume_info["name"]}
 
 =========================================
 RECRUITER EMAIL
@@ -105,48 +127,48 @@ Hello,
 
 I hope you are doing well.
 
-I am interested in this opportunity and believe my current skills match many of your requirements.
+My name is {resume_info["name"]}, and I am interested in this opportunity. Based on my resume, I match several of the required skills and would appreciate the opportunity to discuss my background further.
 
 Thank you for your time.
 
 Best regards,
-Candidate
+{resume_info["name"]}
 
 =========================================
 PROJECT STATUS
 =========================================
 
-Running in DEMO MODE
-(No OpenAI API Key)
-
-This report is generated using:
-- Resume Parser
-- Resume Info Extractor
-- ATS Scanner
+Version: v0.4 Resume Structure Parser
+Mode: DEMO MODE
 """
 
 
-def generate_job_package(job_description: str, resume_text: str) -> str:
+def generate_job_package(job_description: str, resume_text: str, resume_info: dict) -> str:
     if USE_DEMO_MODE:
-        return generate_demo_package(job_description, resume_text)
+        return generate_demo_package(job_description, resume_text, resume_info)
 
     user_prompt = f"""
 JOB DESCRIPTION:
 {job_description}
 
-RESUME:
+RESUME STRUCTURE:
+{resume_info}
+
+FULL RESUME TEXT:
 {resume_text}
 
-Hay tao ket qua gom:
+Create:
 1. Match Report
 2. Cover Letter
 3. Recruiter Email
+
+Do not invent information.
 """
 
     response = client.chat.completions.create(
         model="gpt-4.1-mini",
         messages=[
-            {"role": "system", "content": SYSTEM_PROMPT},
+            {"role": "system", "content": "You are a professional job application assistant. Do not fabricate resume details."},
             {"role": "user", "content": user_prompt},
         ],
         temperature=0.3,
@@ -182,7 +204,7 @@ def main() -> None:
 
     print("\nAgent dang phan tich...\n")
 
-    result = generate_job_package(job_description, resume_text)
+    result = generate_job_package(job_description, resume_text, resume_info)
 
     print("\n=== KET QUA ===\n")
     print(result)
